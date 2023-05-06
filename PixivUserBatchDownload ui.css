@@ -348,7 +348,7 @@ dt:first-child
 	height:calc(100% - 12px);
 	overflow: auto;
 }
-.pubd-dialog .dlg-content,.pubd-frame .pubd-frame-caption
+.pubd-dialog .dlg-content
 {/*对话框内容和框架标题都要设置相同的背景颜色*/
 	background-color: #F0F0F0;
 }
@@ -356,6 +356,7 @@ dt:first-child
 {/*对话框内容内的列表*/
 	width:100%;
 	height:100%;
+	box-sizing: border-box;
 	padding: 0;
 	margin: 0;
 	overflow: auto;
@@ -430,14 +431,11 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 	border-radius: 4px;
 	position: relative;
 	margin:10px 1px 1px 1px;
-	padding: 12px 5px 5px 5px;
+	padding: 5px;
 }
 .pubd-frame .pubd-frame-caption
 {/*窗口内框架标题*/
-	top:-10px;
-	left: 8px;
-	position: absolute;
-	padding-left: 2px;
+	padding-left: 4px;
 	padding-right: 4px;
 }
 .pubd-infoCard
@@ -615,7 +613,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 398px);
+	height: calc(100% - 440px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/

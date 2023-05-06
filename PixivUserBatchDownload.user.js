@@ -7,9 +7,9 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.18.144
+// @version		5.19.145
 // @author		Mapaler <mapaler@163.com>
-// @copyright	2016~2022+, Mapaler <mapaler@163.com>
+// @copyright	2016~2023+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
 // @icon		https://www.pixiv.net/favicon.ico
 // @homepage	https://github.com/Mapaler/PixivUserBatchDownload
@@ -32,7 +32,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @exclude		*://www.pixiv.net/manage*
 // @exclude		*://www.pixiv.net/report*
-// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.17.138
+// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.19.145
 // @require		https://unpkg.com/crypto-js@4.1.1/core.js
 // @require		https://unpkg.com/crypto-js@4.1.1/md5.js
 // @require		https://unpkg.com/crypto-js@4.1.1/sha256.js
@@ -55,7 +55,6 @@
 // @noframes
 // ==/UserScript==
 
-/*jshint esversion: 6, shadow: true */
 (function() {
 	'use strict';
 
@@ -135,10 +134,10 @@ const pubd = { //储存程序设置
 //匹配P站内容的正则表达式
 const illustPathRegExp = /(\/.+\/\d{4}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/((\d+)(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\d+(?:_\w+)?\.([\w\d]+)/i; //P站画作地址 path部分 正则匹配式
 const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\.([\w\d]+)/i; //P站无权访问作品地址 path部分 正则匹配式
+const limitingFilenameExp = /limit_(mypixiv|unknown)/ig; //P站上锁图片文件名正则匹配式
 
-const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
-const PixivAppVersion = "6.73.0"; //Pixiv APP的版本
+const PixivAppVersion = "6.75.1"; //Pixiv APP的版本
 const AndroidVersion = "13.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${AndroidVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 
@@ -807,22 +806,19 @@ var Dialog = function(caption, classname, id) {
 
 //创建框架类
 var Frame = function(title, classname) {
-	var frame = document.createElement("div");
+	var frame = document.createElement("fieldset");
 	frame.className = "pubd-frame" + (classname ? " " + classname : "");
 
-	var caption = frame.caption = frame.appendChild(document.createElement("div"));
+	var caption = frame.appendChild(document.createElement("legend"));
 	caption.className = "pubd-frame-caption";
-	caption.innerHTML = title;
+	caption.textContent = title;
 	
 	var content = frame.content = frame.appendChild(document.createElement("div"));
 	content.className = "pubd-frame-content";
 
-	frame.name = function() {
-		return this.caption.textContent;
-	};
 	frame.rename = function(newName) {
 		if (typeof(newName) == "string" && newName.length > 0) {
-			this.caption.innerHTML = newName;
+			this.querySelector("legend").textContent = newName;
 			return true;
 		} else
 			return false;
@@ -2932,7 +2928,7 @@ function buildDlgDownThis(userid) {
 					}
 					var outArr = []; //输出内容
 					for (var pi = 0; pi < page_count; pi++) {
-						if (returnLogicValue(scheme.downfilter, userInfo, illust, pi) || new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) {
+						if (returnLogicValue(scheme.downfilter, userInfo, illust, pi) || limitingFilenameExp.test(illust.filename)) {
 							//跳过此次输出
 							continue;
 						}else{
@@ -3245,7 +3241,7 @@ function buildDlgDownIllust(illustid) {
 			}
 			var outArr = []; //输出内容
 			for (var pi = 0; pi < page_count; pi++) {
-				if (returnLogicValue(scheme.downfilter, null, illust, pi) || new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) {
+				if (returnLogicValue(scheme.downfilter, null, illust, pi) || limitingFilenameExp.test(illust.filename)) {
 					//跳过此次输出
 					continue;
 				}else{
@@ -3598,7 +3594,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 			page_count = illust.ugoira_metadata.frames.length;
 		}
 	
-		if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) //无权查看的文件
+		if (limitingFilenameExp.test(illust.filename)) //无权查看的文件
 		{
 			if (downP) downP.progress.set((downP.current += page_count) / downP.max); //直接加上一个作品所有页数
 			sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback); //调用自身
@@ -3653,7 +3649,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 		for (var illustIndex = 0; illustIndex < illusts.length; illustIndex++)
 		{
 			var illust = illusts[illustIndex];
-			if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) continue; //无权查看的文件，直接继续
+			if (limitingFilenameExp.test(illust.filename)) continue; //无权查看的文件，直接继续
 
 			var page_count = illust.page_count; //作品页数
 			if (illust.type == "ugoira" && illust.ugoira_metadata) //修改动图的页数
@@ -3723,7 +3719,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 	{
 		page_count = illust.ugoira_metadata.frames.length;
 	}
-	if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) //无法查看的文件，直接把page加到顶
+	if (limitingFilenameExp.test(illust.filename)) //无法查看的文件，直接把page加到顶
 	{
 		page = page_count;
 		downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
