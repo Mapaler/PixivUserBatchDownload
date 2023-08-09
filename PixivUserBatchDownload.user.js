@@ -80,7 +80,7 @@ const mainDivSearchCssSelectorArray = [
 	'#spa-contents .user-stats', //手机版用户页
 	'#spa-contents .user-details-card', //手机版作品页
 	':scope>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页
-	':scope>div>div>aside>section', //单个作品页
+	'main ~ aside > section', //单个作品页
 ];
 //搜索页，列表的ul位置（用来显示收藏状态）
 const searchListCssPath = ':scope>div>div:nth-of-type(6)>div>section>div:nth-of-type(2)>ul';
