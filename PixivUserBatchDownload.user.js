@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.20.146
+// @version		5.20.147
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2023+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -3862,7 +3862,15 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 
 //主引导程序
 function Main(touch) {
-	if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
+	if (!mdev) { //不是开发模式时加载CSS资源
+		let css = GM_getResourceText("pubd-style");
+		if (css.includes('@-moz-document')) {
+			let cssStart = css.indexOf("{", css.indexOf('domain("www.pixiv.net")'))+1,
+				cssEnd = css.lastIndexOf("}");
+			css = css.substring(cssStart, cssEnd);
+		}
+		GM_addStyle(css);
+	}
 
 	//删除以前储存的账号密码
 	let cfgVer = GM_getValue("pubd-configversion");
