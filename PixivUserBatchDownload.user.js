@@ -76,12 +76,21 @@ let mainDiv = null;
 //不同页面开始按钮的插入位点
 //哪天P站位置改版了，可能就需要手动调整这些路径
 //下面的 :scope 指的是 mainDiv，2022年8月2日 当前路径为 #root>div:nth-of-type(2)>div>div:nth-of-type(2)
-const mainDivSearchCssSelectorArray = [
-	'#spa-contents .user-stats', //手机版用户页
-	'#spa-contents .user-details-card', //手机版作品页
-	':scope>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页
-	':scope>div>div>aside>section', //单个作品页
-];
+// key 是原来的css selector, value为获取失败时的处理函数
+const mainDivSearchCssSelector = {
+	'#spa-contents .user-stats': null, // 手机版用户页
+	'#spa-contents .user-details-card': null, // 手机版作品页
+	// PC版 单个作品页,有浏览器不支持:has时使用备用方案
+	':scope section:has(button[data-gtm-user-id][data-click-label])': (node) => {
+		const ele = node.querySelector(':scope button[data-gtm-user-id][data-click-label]');
+		return ele ? ele.closest('section') : null;
+	},
+	// PC版 用户资料页,有浏览器不支持:has时使用备用方案, 用户资料页也可以使用这一个
+	':scope :has(>button[data-gtm-user-id][data-click-label])': (node) => {
+		const ele = node.querySelector(':scope button[data-gtm-user-id][data-click-label]');
+		return ele ? ele.parentNode : null;
+	}
+}
 //搜索页，列表的ul位置（用来显示收藏状态）
 const searchListCssPath = ':scope>div>div:nth-of-type(6)>div>section>div:nth-of-type(2)>ul';
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
@@ -4037,8 +4046,21 @@ function Main(touch) {
 						reInsertStart = false;
 						break;
 					} else {
-						const foundStartBtn = mainDivSearchCssSelectorArray.some(cssS=>{
-							const btnStartInsertPlace = node.querySelector(cssS);
+						const foundStartBtn = Object.entries(mainDivSearchCssSelector).some(entry => {
+							let btnStartInsertPlace,
+								cssS = entry[0],
+								onerror = entry[1];
+							try {
+								btnStartInsertPlace = node.querySelector(cssS);
+							} catch (e) {
+								if (mdev) console.error(`${cssS} 获取开始按钮容器异常`, e);
+								if (typeof onerror === 'function') {
+									if (mdev) console.log('尝试使用配置的 onerror 重新获取');
+									btnStartInsertPlace = onerror(node);
+								} else {
+									if (mdev) console.log('未配置 onerror 无法获取');
+								}
+							}
 							if(btnStartInsertPlace) {
 								mainDiv = node; //重新选择主div
 								if (mdev) console.log("mainDiv 为 %o ，始按钮插入点 CSS 路径为 %s",mainDiv,cssS);
@@ -4051,7 +4073,7 @@ function Main(touch) {
 								}
 								return true;
 							}else return false;
-						});
+						})
 						if (foundStartBtn) break; //如果插入了开始按钮，就退出循环
 					}
 				}
