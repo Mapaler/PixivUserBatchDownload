@@ -1,3 +1,14 @@
+/* ==UserStyle==
+@name           PixivUserBatchDownload UI
+@namespace      http://www.mapaler.com/
+@author         mapaler
+@description    `P站画师个人作品批量下载工具v5.x的UI，配合PUBDv5使用The UI for PixivUserBatchDownload, must be used with the PUBDhttps://github.com/Mapaler/PixivUserBatchDownload`
+@version        v5.20.146
+@license        GPLv3
+==/UserStyle== */
+@namespace url(http://www.w3.org/1999/xhtml);
+
+@-moz-document domain("www.pixiv.net") {
 .display-none
 {/*任何需要隐藏的*/
 	display:none !important;
@@ -318,9 +329,6 @@ dt:first-child
 {/*对话框关闭按钮文字*/
 	text-shadow: -1px -1px 1px #a00,1px 1px 1px #a00,-1px 1px 1px #a00,1px -1px 1px #a00;
 }
-.pubd-dialog .caption .pubd-icon
-{/*对话框图标*/
-}
 .pubd-dialog .caption
 {/*对话框标题*/
 	position: absolute;
@@ -468,7 +476,7 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 	margin: 0;
 	padding: 0;
 	display: inline-block;
-	width : calc(100% - 100px);
+	width: calc(100% - 100px);
     vertical-align:top;
 }
 .pubd-infoCard-dl dt
@@ -478,7 +486,7 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 	padding: 0;
 	left:0;
 	position:relative;
-	width : 90px;
+	width: 90px;
 	vertical-align:top;
 	text-align: right;
 }
@@ -489,7 +497,7 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 	padding: 0;
 	left:0;
 	position:relative;
-	width : calc(100% - 90px);
+	width: calc(100% - 90px);
 	vertical-align:top;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -528,9 +536,6 @@ color: #333;
 font-size: 12px;
 border: 1px solid #becad7;
 	box-sizing: border-box;
-}
-.pubd-config .pubd-icon
-{/*选项对话框图标*/
 }
 .pubd-tologin,
 .pubd-open-refresh-token,
@@ -830,9 +835,9 @@ border: 1px solid #becad7;
 {/*下载日志*/
 	min-width: 100px;
 	min-height: 40px;
-	width : 100%;
+	width: 100%;
     box-sizing: border-box;
-	height : 100px;
+	height: 100px;
     resize:none;
 }
 /*.pubd-down .pubd-down-downbar
@@ -856,19 +861,19 @@ border: 1px solid #becad7;
 }
 .pubd-downthis .pubd-down-textout-bar
 {
-	height : calc(100% - 435px);
+	height: calc(100% - 435px);
 }
 .pubd-downillust .pubd-down-textout-bar
 {
-	height : calc(100% - 335px);
+	height: calc(100% - 335px);
 }
 .pubd-down .pubd-down-textout
 {/*文本输出*/
 	min-width: 100px;
 	min-height: 40px;
-	width : 100%;
+	width: 100%;
     box-sizing: border-box;
-	height : 100%;
+	height: 100%;
 	resize:none;
 }
 /*▲下载当前画师窗口内容*/
@@ -883,7 +888,7 @@ border: 1px solid #becad7;
 }
 .pubd-import .pubd-import-textarea-bar
 {
-	height : calc(100% - 75px);
+	height: calc(100% - 75px);
 }
 .pubd-import .pubd-import-textarea
 {/*导入内容*/
@@ -918,4 +923,5 @@ border: 1px solid #becad7;
 .pubd-dialog
 {/*启用夜间模式时出现文字变白的BUG*/
     color: rgb(31, 31, 31);
+}
 }

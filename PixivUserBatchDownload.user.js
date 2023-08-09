@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.19.145
+// @version		5.20.146
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2023+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -32,7 +32,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @exclude		*://www.pixiv.net/manage*
 // @exclude		*://www.pixiv.net/report*
-// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.19.145
+// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.20.146
 // @require		https://unpkg.com/crypto-js@4.1.1/core.js
 // @require		https://unpkg.com/crypto-js@4.1.1/md5.js
 // @require		https://unpkg.com/crypto-js@4.1.1/sha256.js
@@ -58,7 +58,8 @@
 (function() {
 	'use strict';
 
-//获取当前是否是本地开发状态
+//获取当前是否是本地开发状态，自己用 localStorage.setItem("pubd-dev", "1") 既可以开启，localStorage.removeItem("pubd-dev") 关闭
+//注意开发状态下为了方便随时调整预览，css 不会自动加载，需要自己用 Stylus 扩展添加 PixivUserBatchDownload ui.css 的内容。
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
 if (mdev) console.log("GM_info信息：",GM_info); //开发模式时显示meta数据
 
@@ -75,22 +76,26 @@ let subRoot = null;
 let mainDiv = null;
 //不同页面开始按钮的插入位点
 //哪天P站位置改版了，可能就需要手动调整这些路径
-//下面的 :scope 指的是 mainDiv，2022年8月2日 当前路径为 #root>div:nth-of-type(2)>div>div:nth-of-type(2)
-// key 是原来的css selector, value为获取失败时的处理函数
-const mainDivSearchCssSelector = {
-	'#spa-contents .user-stats': null, // 手机版用户页
-	'#spa-contents .user-details-card': null, // 手机版作品页
-	// PC版 单个作品页,有浏览器不支持:has时使用备用方案
-	':scope section:has(button[data-gtm-user-id][data-click-label])': (node) => {
-		const ele = node.querySelector(':scope button[data-gtm-user-id][data-click-label]');
-		return ele ? ele.closest('section') : null;
+//下面的 :scope 指的是 mainDiv，2023年8月9日 当前路径为 #root>div:nth-of-type(2)>div>div:nth-of-type(3)
+// 先使用 selectors 字符串搜索，获取失败时使用 fallcack 处理函数
+const mainDivSearchCssSelector = [
+	{selectors: '#spa-contents .user-stats'}, // 手机版用户页
+	{selectors: '#spa-contents .user-details-card'}, // 手机版作品页
+	// PC版 单个作品页
+	{selectors: ':scope section:has(button[data-gtm-user-id][data-click-label])',
+		fallcack: (node) => {
+			const ele = node.querySelector(':scope main+aside>section div[title]');
+			return ele?.closest('section');
+		},
 	},
-	// PC版 用户资料页,有浏览器不支持:has时使用备用方案, 用户资料页也可以使用这一个
-	':scope :has(>button[data-gtm-user-id][data-click-label])': (node) => {
-		const ele = node.querySelector(':scope button[data-gtm-user-id][data-click-label]');
-		return ele ? ele.parentNode : null;
-	}
-}
+	// PC版 用户资料页
+	{selectors: ':scope :has(>button[data-gtm-user-id][data-click-label])',
+		fallcack: (node) => {
+			const ele = node.querySelector(':scope div[title]:not(a [title])');
+			return ele?.parentElement?.parentElement?.nextElementSibling;
+		},
+	},
+];
 //搜索页，列表的ul位置（用来显示收藏状态）
 const searchListCssPath = ':scope>div>div:nth-of-type(6)>div>section>div:nth-of-type(2)>ul';
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
@@ -354,23 +359,27 @@ class HeadersObject{
 }
 
 //储存一项图片列表分析数据的对象
-var Works = function(){
-	this.done = false; //是否分析完毕
-	this.item = []; //储存图片数据
-	this.break = false; //储存停止分析的Flag
-	this.runing = false; //是否正在运行的Flasg
-	this.next_url = ""; //储存下一页地址（断点续传）
+class Works{
+	constructor(){
+		this.done = false; //是否分析完毕
+		this.item = []; //储存图片数据
+		this.break = false; //储存停止分析的Flag
+		this.runing = false; //是否正在运行的Flasg
+		this.next_url = ""; //储存下一页地址（断点续传）
+	}
 };
 
 Math.randomInteger = function(max, min = 0)
 {
-	return this.floor(this.random()*(max-min+1)+min);
+	let _max = Math.max(max, min),
+		_min = Math.min(max, min);
+	return this.floor(this.random()*(_max-_min+1)+_min);
 }
 //认证方案
 class oAuth2
 {
 	constructor(existAuth){
-		this.code_verifier = this.random_code_verifier();
+		this.code_verifier = this.constructor.random_code_verifier();
 		this.login_time = null;
 		this.authorization_code = null;
 		this.auth_data = null;
@@ -385,36 +394,35 @@ class oAuth2
 			Object.assign(this, existAuth);
 		}
 	}
-	random_code_verifier()
+	static random_code_verifier()
 	{
-		const len = Math.randomInteger(43, 128); //产生43~128位
+		//OAuth 2.0 客户端应用生成一个43~128位的随机字符串 （code_verifier）并查找它的 SHA256 哈希，这称为 code_challenge。
+		const codeLen = Math.randomInteger(43, 128); //产生43~128位
+		const passArray = new Uint8Array(codeLen);
+		window.crypto.getRandomValues(passArray); //获取符合密码学要求的安全的随机值
 	
 		const unreservedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-		const charsLength = unreservedChars.length;
+		const charsLength = unreservedChars.length - 1;
 	
-		let array = new Uint8Array(len);
-		window.crypto.getRandomValues(array); //获取符合密码学要求的安全的随机值
+		const codeArray = Array.from(passArray).map(x => unreservedChars.charAt(x/0xFF * charsLength));
 	
-		array = array.map(x => unreservedChars.charCodeAt(x % charsLength)); //将0~255转换到可选字符位置区间
-		const radomCode = String.fromCharCode(...array); //将数字变回字符串
-	
-		return radomCode;
+		return codeArray.join('');
 	}
-	get_code_challenge(code_challenge_method = "S265")
+	get_code_challenge(code_challenge_method)
 	{
-		if (code_challenge_method == "S265")
+		if (code_challenge_method == "S256") //S256
 		{
 			const bytes = CryptoJS.SHA256(this.code_verifier);
 			const base64 = bytes.toString(CryptoJS.enc.Base64);
-			const base64url = this.base64_to_base64url(base64);
+			const base64url = this.constructor.base64_to_base64url(base64);
 			return base64url;
 		}
-		else
+		else //plain
 		{
 			return this.code_verifier;
 		}
 	}
-	base64_to_base64url(base64)
+	static base64_to_base64url(base64)
 	{
 		let base64url = base64;
 		base64url = base64url.replace(/\=/g,'');
@@ -461,9 +469,10 @@ class oAuth2
 	}
 	get_login_url()
 	{
+		const code_challenge_method = "S256"; //P站不支持plain
 		const loginURL = new URL("https://app-api.pixiv.net/web/v1/login");
-		loginURL.searchParams.set("code_challenge", this.get_code_challenge());
-		loginURL.searchParams.set("code_challenge_method","S256");
+		loginURL.searchParams.set("code_challenge", this.get_code_challenge(code_challenge_method));
+		loginURL.searchParams.set("code_challenge_method", code_challenge_method);
 		loginURL.searchParams.set("client","pixiv-android");
 		return loginURL;
 	}
@@ -1183,7 +1192,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 							//自动重新登录
 							pubd.dialog.refresh_token.show(
 								(document.body.clientWidth - 370)/2,
-								window.pageYOffset+300,
+								window.scrollY+300,
 								{
 									onload: ()=>{
 										pubd.dialog.refresh_token.hide();
@@ -1395,22 +1404,11 @@ function checkStar()
 function refreshRecommendListState() { 
 	if (!recommendList) return;
 	
-	const liNodes = recommendList.querySelectorAll(":scope>li");
+	const liNodes = recommendList.getElementsByTagName("li");
 	for (const liNode of liNodes) {
-		const userLink = liNode.querySelector("div>div:last-of-type>div>a");
-		let uidRes;
-		if (uidRes = /\d+/.exec(userLink.pathname))
-		{
-			const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
-			if (pubd.fastStarList.has(uid))
-			{
-				liNode.classList.add("pubd-stared"); //添加隐藏用的css
-			}
-			else
-			{
-				liNode.classList.remove("pubd-stared"); //添加隐藏用的css
-			}
-		}
+		const imgLink = liNode.querySelector(":scope a[data-gtm-user-id]");
+		const uid = parseInt(imgLink.dataset.gtmUserId, 10); //得到这个作品的作者ID
+		liNode.classList.toggle("pubd-stared", pubd.fastStarList.has(uid));
 	}
 }
 //构建开始按钮
@@ -1465,7 +1463,7 @@ function buildbtnMenu() {
 	menu.downillust = menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
 		pubd.dialog.downillust.show(
 			(document.body.clientWidth - 500)/2,
-			window.pageYOffset+150,
+			window.scrollY+150,
 			{id:getQueryString('illust_id',
 			pubd.touch ? 
 			mainDiv.querySelector('.illust-details-content .work-stats>a') : //手机版
@@ -1477,7 +1475,7 @@ function buildbtnMenu() {
 	menu.downthis = menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
 		pubd.dialog.downthis.show(
 			(document.body.clientWidth - 440)/2,
-			window.pageYOffset+100,
+			window.scrollY+100,
 			{id:getCurrentUserId()}
 		);
 		menu.hide();
@@ -1495,14 +1493,14 @@ function buildbtnMenu() {
 	if (mdev) menu.downmult = menu.add("多画师下载", "pubd-menu-multiple", function(e) {
 		pubd.dialog.multiple.show(
 			(document.body.clientWidth - 440)/2,
-			window.pageYOffset+100
+			window.scrollY+100
 		);
 		menu.hide();
 	});
 	menu.add("选项", "pubd-menu-setting", function(e) {
 		pubd.dialog.config.show(
 			(document.body.clientWidth - 400)/2,
-			window.pageYOffset+50
+			window.scrollY+50
 		);
 		menu.hide();
 	});
@@ -1600,7 +1598,7 @@ function buildDlgConfig() {
 			//登录
 			pubd.dialog.login.show(
 				(document.body.clientWidth - 370)/2,
-				window.pageYOffset+200
+				window.scrollY+200
 			);
 		}
 	}
@@ -1617,7 +1615,7 @@ function buildDlgConfig() {
 		//刷新许可
 		pubd.dialog.refresh_token.show(
 			(document.body.clientWidth - 370)/2,
-			window.pageYOffset+300
+			window.scrollY+300
 		);
 	};
 
@@ -2282,7 +2280,7 @@ function buildDlgLogin() {
 		//刷新许可
 		pubd.dialog.refresh_token.show(
 			(document.body.clientWidth - 370)/2,
-			window.pageYOffset+300
+			window.scrollY+300
 		);
 	};
 
@@ -3918,13 +3916,13 @@ function Main(touch) {
 	GM_registerMenuCommand("PUBD-选项", function(){
 		pubd.dialog.config.show(
 			(document.body.clientWidth - 400)/2,
-			window.pageYOffset+50
+			window.scrollY+50
 		);
 	});
 	GM_registerMenuCommand("PUBD-下载该画师", function(){
 		pubd.dialog.downthis.show(
 			(document.body.clientWidth - 440)/2,
-			window.pageYOffset+100,
+			window.scrollY+100,
 			{id:getCurrentUserId()}
 		);
 	});
@@ -3933,7 +3931,7 @@ function Main(touch) {
 	GM_registerMenuCommand("PUBD-导入窗口测试", function(){
 		pubd.dialog.importdata.show(
 			(document.body.clientWidth - 370)/2,
-			window.pageYOffset+200,
+			window.scrollY+200,
 			{callback:function(txt){
 				const importArr = txt.split("\n");
 				const needAddArr = importArr.map(str=>{
@@ -3984,7 +3982,7 @@ function Main(touch) {
 				downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
 					pubd.dialog.downillust.show(
 						(document.body.clientWidth - 500)/2,
-						window.pageYOffset+150,
+						window.scrollY+150,
 						{id:getQueryString('illust_id',
 							pubd.touch ? 
 							mainDiv.querySelector('.illust-details-content .work-stats>a') : //手机版
@@ -4000,7 +3998,7 @@ function Main(touch) {
 			checkStar(); //检查是否有收藏
 			//插入开始操作按钮
 			btnStartInsertPlace.appendChild(btnStartBox);
-			console.log("PUBD：网页发生变动，已重新呈现开始按钮。");
+			console.log("PUBD：网页发生变动，已重新呈现开始按钮。 %o", btnStartBox);
 			return true;
 		}
 	}
@@ -4042,28 +4040,28 @@ function Main(touch) {
 				for (const node of (touch ? touchRoot : subRoot).children) {
 					if (recommendList = node.querySelector(searchListCssPath)) {//如果是搜索结果界面而非用户/作品界面
 						mainDiv = node; //重新选择主div
-						if (mdev) console.log("mainDiv 为 %o，搜索列表为 %o，", mainDiv, recommendList);
+						if (mdev) console.debug("mainDiv 为 %o，搜索列表为 %o，", mainDiv, recommendList);
 						reInsertStart = false;
 						break;
 					} else {
-						const foundStartBtn = Object.entries(mainDivSearchCssSelector).some(entry => {
+						const foundStartBtn = mainDivSearchCssSelector.some(entry => {
 							let btnStartInsertPlace,
-								cssS = entry[0],
-								onerror = entry[1];
+								cssS = entry.selectors,
+								fallcack = entry.fallcack;
 							try {
 								btnStartInsertPlace = node.querySelector(cssS);
 							} catch (e) {
 								if (mdev) console.error(`${cssS} 获取开始按钮容器异常`, e);
-								if (typeof onerror === 'function') {
-									if (mdev) console.log('尝试使用配置的 onerror 重新获取');
-									btnStartInsertPlace = onerror(node);
+								if (typeof fallcack === 'function') {
+									if (mdev) console.debug('尝试使用配置的 fallcack 重新获取');
+									btnStartInsertPlace = fallcack(node);
 								} else {
-									if (mdev) console.log('未配置 onerror 无法获取');
+									if (mdev) console.debug('未配置 fallcack 无法获取');
 								}
 							}
 							if(btnStartInsertPlace) {
 								mainDiv = node; //重新选择主div
-								if (mdev) console.log("mainDiv 为 %o ，始按钮插入点 CSS 路径为 %s",mainDiv,cssS);
+								if (mdev) console.debug("mainDiv 为 %o ，始按钮插入点条目为 %o",mainDiv,entry);
 								reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
 	
 								const userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
@@ -4080,12 +4078,13 @@ function Main(touch) {
 			}
 
 			//作品页面显示推荐的部分
-			let otherWorks
-			if (!recommendList && (otherWorks = (touch || !mainDiv) ? null : mainDiv.querySelector(":scope>div:nth-of-type(2)>div>aside:nth-of-type(2)")))
+			let otherWorks;
+			if (!recommendList && (otherWorks = subRoot.querySelector(".gtm-illust-recommend-zone") || subRoot.querySelector("section h3")?.parentElement?.parentElement?.parentElement))
 			{ //已发现推荐列表大部位
-				if (recommendList = otherWorks.querySelector("section>div:nth-of-type(2) ul"))
+				if (recommendList = otherWorks.querySelector(":scope ul"))
 				{
-					if (mdev) console.log("发现推荐列表 %o",recommendList);
+					if (mdev) console.log("发现推荐列表 %o", recommendList);
+					refreshRecommendListState();
 				}
 			}
 			if (recommendList)
