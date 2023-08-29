@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.20.147
+// @version		5.21.148
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2023+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -263,16 +263,61 @@ if (location.host.includes("touch")) //typeof(pixiv.AutoView)!="undefined"
 /*
  * 自定义对象区
  */
-const PixivTimezoneOffset = (date=>{ //国内为 +08:00
-	const o = date.getTimezoneOffset(); //本地时区差值
-	return `${o<=0?'+':'-'}${[o/60,o%60, //时区 +差时:差分
-	].map(n=>Math.floor(Math.abs(n)).toString().padStart(2,'0')).join(':')}`;
+Date.PixivTimezoneOffset = (date=>{ //国内为 +08:00
+	const o = date.getTimezoneOffset(); //本地时区差分钟数，正时区为负数
+	//时区 +差时:差分
+	return `${Math.trunc(-o/60).toLocaleString(void 0,{
+        style: "decimal",
+        minimumIntegerDigits: 2,
+        signDisplay: "always"
+    })}:${(o%60).toLocaleString(void 0,{
+        style: "decimal",
+        minimumIntegerDigits: 2,
+        signDisplay: "never"
+    })}`;
+	//return `${o<=0?'+':'-'}${[o/60,o%60].map(n=>Math.trunc(Math.abs(n)).toString().padStart(2,'0')).join(':')}`;
 })(new Date());
-//生成P站需要的时间格式，如 "2019-09-03T18:51:40+08:00"
+/**
+ * 生成P站需要的时间格式
+ * @returns P站时间格式如 "2019-09-03T18:51:40+08:00"
+ */
 Date.prototype.toPixivString = function() {
-	const str = this.toJSON().split('.')[0] + PixivTimezoneOffset;
-	return str;
+	let s = this.toJSON();
+	return s.substring(0,s.indexOf('.')) + Date.PixivTimezoneOffset;
 };
+//
+/**
+ * 日期格式化
+ * @param {string} format 格式 y:年，M:月，d:日，h:时，m:分，s:秒
+ * @returns {string} 格式化的日期字符串
+ * @see {@link https://www.cnblogs.com/tugenhua0707/p/3776808.html|代码来源}
+ * @example
+ * // returns "2023-08-29 21:22:51"
+ * new Date().format("yyyy-MM-dd hh:mm:ss");
+ */
+Date.prototype.format = function(format) { 
+	let fmt = format; //复制到新的字符串内
+	const o = [ 
+		["M+" , this.getMonth()+1],                 //月份 
+		["d+" , this.getDate()],                    //日 
+		["h+" , this.getHours()],                   //小时 
+		["m+" , this.getMinutes()],                 //分 
+		["s+" , this.getSeconds()],                 //秒 
+		["q+" , Math.floor((this.getMonth()+3)/3)], //季度 
+		["S"  , this.getMilliseconds()]            //毫秒 
+	]; 
+	let regRes;
+	if(regRes = /(y+)/.exec(fmt)) {
+		fmt = fmt.replace(regRes[1], (this.getFullYear()+"").substr(4 - regRes[1].length)); 
+	}
+	for (let i = 0; i < o.length; i++) {
+		let [k, v] = o[i];
+		if(regRes = new RegExp("("+ k +")").exec(fmt)) {
+			fmt = fmt.replace(regRes[1], (regRes[1].length===1) ? v : v.toString().padStart(2,'0'));
+		}
+	}
+	return fmt; 
+}
 /*
 //一个被收藏的画师
 class StarUser{
@@ -3620,12 +3665,12 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 
 				aria2_method.params.push([url]); //添加下载链接
 				var options = {
-					"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+					"out": pathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 'pathWithoutDriver'),
 					"referer": Referer,
 					"user-agent": UA,
 				};
 				if (scheme.savedir.length > 0) {
-					options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+					options.dir = pathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 'path');
 				}
 				if (scheme.proxyurl.length > 0) {
 					options["all-proxy"] = scheme.proxyurl;
@@ -3675,12 +3720,12 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 
 					aria2_method.params.push([url]); //添加下载链接
 					var options = {
-						"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+						"out": pathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 'pathWithoutDriver'),
 						"referer": Referer,
 						"user-agent": UA,
 					};
 					if (scheme.savedir.length > 0) {
-						options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+						options.dir = pathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 'path');
 					}
 					if (scheme.proxyurl.length > 0) {
 						options["all-proxy"] = scheme.proxyurl;
@@ -3745,13 +3790,13 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 		//console.info("符合下载过滤器定义，跳过下载：", illust);
 	} else {
 		var options = {
-			"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+			"out": pathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 'pathWithoutDriver'),
 			"referer": Referer,
 			"user-agent": UA,
 		};
 
 		if (scheme.savedir.length > 0) {
-			options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+			options.dir = pathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 'path');
 		}
 		if (scheme.proxyurl.length > 0) {
 			options["all-proxy"] = scheme.proxyurl;
@@ -3839,27 +3884,29 @@ function returnLogicValue(logic, user, illust, page) {
 		return false;
 	}
 }
-
-function replacePathSafe(str, type) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
-{ //keepTree表示是否要保留目录树的字符（\、/和:）
-	if (typeof(str) == "undefined")
-	{
-		return "";
-	}
+/**
+ * 去除不可用的字符，替换为可以使用的安全路径字符串
+ * @param {string} str 输入路径字符串
+ * @param {'basic' | 'path' | 'pathWithoutDriver' | 'filename' | 'fn'} type 去除不可用字符串的形式，是路径还是文件名
+ * @param {string} newChar 被替换为的字符 
+ * @returns {string} 安全路径字符串
+ */
+function pathSafe(str = "", type, newChar = "") { //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 	let nstr = str.toString(); //新字符
-	nstr = nstr.replace(/\u0000-\u001F\u007F-\u00A0/ig, ""); //替换所有的控制字符
-	var patternStrs = [
-		"[\\*\\?\"<>\\|]",                 //只替换路径中完全不能出现的特殊字符
-		"[\\*\\?\"<>\\|\\r\\n]",           //上述字符加冒号:，用于非驱动器路径
-		"[\\*\\?\"<>\\|\\r\\n\\\\\\/]",    //完全替换所有不能出现的特殊字符，包含斜杠
-	];
-	if (patternStrs[type] != undefined)
-	{
-		nstr = nstr.replace(new RegExp(patternStrs[type],"ig"), "_"); //只替换路径中完全不能出现的特殊字符
+	nstr = nstr.replace(/\u0000-\u001F\u007F-\u00A0/ig, ""); //一定去除所有的控制字符，已包含\r \n
+	switch(type) {
+		case "path": { //只替换路径中不能出现的字符，包括除了第一个盘符以外的其他任何
+			nstr = nstr.replace(/["<>\|\*\?]|(?<!^\w):/ig, newChar);
+		}
+		case "pathWithoutDriver": { //只替换路径中不能出现的字符，包括除了第一个盘符以外的其他任何
+			nstr = nstr.replace(/["<>\|\*\?:]/ig, newChar);
+		}
+		case "fn": case "filename": { //替换所有Windows名内不能出现的字符
+			nstr = nstr.replace(/["<>\|:\*\?\\/]/ig, newChar); //只替换路径中完全不能出现的特殊字符
+		}
 	}
 	return nstr;
 }
-
 //主引导程序
 function Main(touch) {
 	if (!mdev) { //不是开发模式时加载CSS资源
