@@ -206,7 +206,13 @@
   <data name="button_unregister.Location" type="System.Drawing.Point, System.Drawing">
     <value>175, 24</value>
   </data>
-  <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="$this.Localizable" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
+  <data name="Identity_Administrator" xml:space="preserve">
+    <value>Administrator</value>
+  </data>
+  <data name="Identity_CurrentUser" xml:space="preserve">
+    <value>Current User</value>
+  </data>
 </root>

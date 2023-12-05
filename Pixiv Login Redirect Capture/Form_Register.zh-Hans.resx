@@ -129,4 +129,10 @@
   <data name="$this.Text" xml:space="preserve">
     <value>PUBD - 注册协议</value>
   </data>
+  <data name="Identity_Administrator" xml:space="preserve">
+    <value>管理员</value>
+  </data>
+  <data name="Identity_CurrentUser" xml:space="preserve">
+    <value>当前用户</value>
+  </data>
 </root>

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31005.135
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pixiv Login Redirect Capture", "Pixiv Login Redirect Capture\Pixiv Login Redirect Capture.csproj", "{92BA135B-7F6C-4725-9258-D925E01C3F77}"
 EndProject

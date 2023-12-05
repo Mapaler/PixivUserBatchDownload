@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.21.149
+// @version		5.21.150
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2023+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -151,11 +151,14 @@ const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\
 const limitingFilenameExp = /limit_(mypixiv|unknown)/ig; //P站上锁图片文件名正则匹配式
 
 //Header使用
-const PixivAppVersion = "6.75.1"; //Pixiv APP的版本
+const PixivAppVersion = "6.92.0"; //Pixiv APP的版本
 const AndroidVersion = "13.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${AndroidVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 
-const X_Client_Hash_Salt = [ //X_Client加密的salt，目前是固定值 "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
+//X_Client加密的salt，目前是固定值 
+const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
+/*
+const X_Client_Hash_Salt = [ //数值写法
 	0x28,0xC1,0xFD,0xD1,
 	0x70,0xA5,0x20,0x43,
 	0x86,0xCB,0x13,0x13,
@@ -165,9 +168,10 @@ const X_Client_Hash_Salt = [ //X_Client加密的salt，目前是固定值 "28c1f
 	0x78,0xC2,0x31,0xE0,
 	0x5B,0x0B,0xAE,0x2C
 ].map(n=>n.toString(16).toLowerCase()).join('');
+*/
 
-const Referer = "https://app-api.pixiv.net/";
-const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
+const Referer = "https://app-api.pixiv.net/"; //手机app的 Referer，不是这个无法下载图片
+const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要，不要轻易修改
 //登录时的固定参数
 const client_id = "MOBrBDS8blbauoSck0ZfDbtuzpyT"; //安卓版固定数据
 const client_secret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"; //安卓版固定数据
@@ -183,7 +187,7 @@ const ajaxDelayDuration = 1000; //每次延迟的时间
 const changeTermwiseCount = 6000; //图片数量大于这个值就从按作者发送切换为按图片发送
 
 /*
- * 初始化数据库
+ * 初始化数据库，这个功能没继续开发了的
  */
 if (mdev)
 {
