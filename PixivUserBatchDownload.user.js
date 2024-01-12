@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.21.150
+// @version		5.21.151
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2023+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -33,10 +33,10 @@
 // @exclude		*://www.pixiv.net/manage*
 // @exclude		*://www.pixiv.net/report*
 // @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.20.146
-// @require		https://unpkg.com/crypto-js@4.1.1/core.js
-// @require		https://unpkg.com/crypto-js@4.1.1/md5.js
-// @require		https://unpkg.com/crypto-js@4.1.1/sha256.js
-// @require		https://unpkg.com/crypto-js@4.1.1/enc-base64.js
+// @require		https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/core.min.js
+// @require		https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/md5.min.js
+// @require		https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/sha256.min.js
+// @require		https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/enc-base64.min.js
 // @grant		window.close
 // @grant		window.focus
 // @grant		GM_xmlhttpRequest
@@ -151,8 +151,8 @@ const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\
 const limitingFilenameExp = /limit_(mypixiv|unknown)/ig; //P站上锁图片文件名正则匹配式
 
 //Header使用
-const PixivAppVersion = "6.92.0"; //Pixiv APP的版本
-const AndroidVersion = "13.0.0"; //安卓的版本
+const PixivAppVersion = "6.94.0"; //Pixiv APP的版本
+const AndroidVersion = "14.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${AndroidVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 
 //X_Client加密的salt，目前是固定值 
@@ -473,10 +473,10 @@ class oAuth2
 	}
 	static base64_to_base64url(base64)
 	{
-		let base64url = base64;
-		base64url = base64url.replace(/\=/g,'');
-		base64url = base64url.replace(/\+/g,'-');
-		base64url = base64url.replace(/\//g,'_');
+		let base64url = base64
+			.replace(/\+/g, '-')
+			.replace(/\//g, '_')
+			.replace(/=+$/, '');
 		return base64url;
 	}
 	refresh_idp_urls(options = {})
