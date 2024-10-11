@@ -1,4 +1,4 @@
-# PixivUserBatchDownload 5
+# PixivUserBatchDownload
 中文名：“[P站](//www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具”，简称 PUBD。
 
 * #### 为什么要做 PUBD？
@@ -33,10 +33,11 @@ PUBD 通过 Pixiv 官方手机 APP 的后台 API 获取作者的作品列表，�
 ## 后续功能开发状态
 因为以下等原因，本项目已进入事实停止维护状态，所以后续的开发展望这几年没有添加任何代码。
 1. P站被封锁
-1. 色图太多，下了也看不过来
-1. 本职工作
-1. 有孩子了
-1. [肝手游](https://github.com/Mapaler/PADDashFormation/)
+2. 色图太多，下了也看不过来
+3. 本职工作
+4. 有孩子了
+5. [肝手游](https://github.com/Mapaler/PADDashFormation/)
+6. 工作太忙了，手游都不玩了。
 
 <details>
 <summary>PUBD 5 已实现</summary>

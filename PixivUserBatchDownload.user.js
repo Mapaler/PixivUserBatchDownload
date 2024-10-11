@@ -7,9 +7,9 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.21.151
+// @version		5.21.152
 // @author		Mapaler <mapaler@163.com>
-// @copyright	2016~2023+, Mapaler <mapaler@163.com>
+// @copyright	2016~2024+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
 // @icon		https://www.pixiv.net/favicon.ico
 // @homepage	https://github.com/Mapaler/PixivUserBatchDownload
@@ -82,14 +82,15 @@ const mainDivSearchCssSelector = [
 	{selectors: '#spa-contents .user-stats'}, // 手机版用户页
 	{selectors: '#spa-contents .user-details-card'}, // 手机版作品页
 	// PC版 单个作品页
-	{selectors: ':scope section:has(button[data-gtm-user-id][data-click-label])',
+	{selectors: ':scope aside section:has(button[data-gtm-user-id][data-click-label])',
 		fallcack: (node) => {
 			const ele = node.querySelector(':scope main+aside>section div[title]');
 			return ele?.closest('section');
 		},
 	},
+	//2024年10月11日 目前火狐更新到128后，支持 :has 了，定位全部被导向这一条了，上面一条不起作用了。
 	// PC版 用户资料页
-	{selectors: ':scope :has(>button[data-gtm-user-id][data-click-label])',
+	{selectors: ':scope :has(>div>h1,>div>button[data-gtm-user-id][data-click-label])',
 		fallcack: (node) => {
 			const ele = node.querySelector(':scope div[title]:not(a [title])');
 			return ele?.parentElement?.parentElement?.nextElementSibling;
@@ -151,8 +152,8 @@ const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\
 const limitingFilenameExp = /limit_(mypixiv|unknown)/ig; //P站上锁图片文件名正则匹配式
 
 //Header使用
-const PixivAppVersion = "6.94.0"; //Pixiv APP的版本
-const AndroidVersion = "14.0.0"; //安卓的版本
+const PixivAppVersion = "6.127.0"; //Pixiv APP的版本
+const AndroidVersion = "15.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${AndroidVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 
 //X_Client加密的salt，目前是固定值 
